@@ -12,7 +12,7 @@ using System.Net;
 namespace MagicVilla_VillaAPI.Controllers
 {
     //[Route("api/[controller]")]
-    [Route("api/VillaAPI")]
+    [Route("api/villaAPI")]
     // apicontroller also helps in model's data validation
     [ApiController]
     //inherited from ControllerBase when designing an API
