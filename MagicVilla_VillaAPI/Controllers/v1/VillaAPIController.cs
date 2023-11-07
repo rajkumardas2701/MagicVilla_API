@@ -9,13 +9,15 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Text.Json;
 
-namespace MagicVilla_VillaAPI.Controllers
+namespace MagicVilla_VillaAPI.Controllers.v1
 {
     //[Route("api/[controller]")]
-    [Route("api/villaAPI")]
+    [Route("api/v{version:apiVersion}/villaAPI")]
     // apicontroller also helps in model's data validation
     [ApiController]
+    [ApiVersion("1.0")]
     //inherited from ControllerBase when designing an API
     public class VillaAPIController : ControllerBase
     {
@@ -26,19 +28,41 @@ namespace MagicVilla_VillaAPI.Controllers
         {
             _dbVilla = dbVilla;
             _mapper = mapper;
-            this._response = new();
+            _response = new();
         }
 
         [HttpGet]
+        [ResponseCache(CacheProfileName = "Default30")]
+
+        // if we don't need to cache
+        //[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<APIResponse>> GetVillas()
+        public async Task<ActionResult<APIResponse>> GetVillas([FromQuery(Name = "filterOccupancy")]int? occupancy,
+            [FromQuery] string? search, int pageSize = 0, int pageNumber = 1)
         {
             try
             {
                 // to convert Villa to VillaDTO, we will use mapper
-                IEnumerable<Villa> villaList = await _dbVilla.GetAllAsync();
+                IEnumerable<Villa> villaList;
+
+                if (occupancy > 0)
+                {
+                    villaList = await _dbVilla.GetAllAsync(u => u.Occupancy == occupancy, pageSize:pageSize, pageNumber:pageNumber);
+                } else
+                {
+                    villaList= await _dbVilla.GetAllAsync(pageSize: pageSize, pageNumber: pageNumber);
+                }
+
+                if(!string.IsNullOrEmpty(search))
+                {
+                    villaList = villaList.Where(u => u.Details.ToLower().Contains(search) 
+                                                || u.Name.ToLower().Contains(search));
+                }
+
+                Pagination pagination = new Pagination() { PageNumber = pageNumber, PageSize = pageSize };
+                Response.Headers.Append("X-Pagination", JsonSerializer.Serialize(pagination));
                 _response.Result = _mapper.Map<List<VillaDTO>>(villaList);
                 _response.StatusCode = HttpStatusCode.OK;
                 return Ok(_response);
@@ -75,7 +99,7 @@ namespace MagicVilla_VillaAPI.Controllers
 
                 if (villa == null)
                 {
-                    _response.StatusCode=HttpStatusCode.NotFound;
+                    _response.StatusCode = HttpStatusCode.NotFound;
                     return NotFound(_response);
                 }
                 //using mapper here as well

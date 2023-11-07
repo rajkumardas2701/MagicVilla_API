@@ -10,11 +10,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
-namespace MagicVilla_VillaAPI.Controllers
+namespace MagicVilla_VillaAPI.Controllers.v1
 {
-    [Route("api/VillaNumberAPI")]
+    [Route("api/v{version:apiVersion}/VillaNumberAPI")]
     // apicontroller also helps in model's data validation
     [ApiController]
+    [ApiVersion("1.0")]
     //inherited from ControllerBase when designing an API
     public class VillaNumberAPIController : ControllerBase
     {
@@ -26,18 +27,26 @@ namespace MagicVilla_VillaAPI.Controllers
         {
             _dbVillaNumber = dbVillaNumber;
             _mapper = mapper;
-            this._response = new();
+            _response = new();
             _dbVilla = dbVilla;
         }
 
+        [HttpGet("GetString")]
+        //[MapToApiVersion("2.0")]
+        public IEnumerable<string> Get()
+        {
+            return new string[] { "String1", "String2" };
+        }
+
         [HttpGet]
+        //[MapToApiVersion("1.0")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<APIResponse>> GetVillaNumbers()
         {
             try
             {
                 // to convert Villa to VillaDTO, we will use mapper
-                IEnumerable<VillaNumber> villaNumberList = await _dbVillaNumber.GetAllAsync(includeProperties:"Villa");
+                IEnumerable<VillaNumber> villaNumberList = await _dbVillaNumber.GetAllAsync(includeProperties: "Villa");
                 _response.Result = _mapper.Map<List<VillaNumberDTO>>(villaNumberList);
                 _response.StatusCode = HttpStatusCode.OK;
                 return Ok(_response);
@@ -65,6 +74,7 @@ namespace MagicVilla_VillaAPI.Controllers
                 if (id == 0)
                 {
                     _response.StatusCode = HttpStatusCode.BadRequest;
+                    _response.IsSuccess = false;
                     return BadRequest(_response);
                 }
 
@@ -72,7 +82,8 @@ namespace MagicVilla_VillaAPI.Controllers
 
                 if (villaNumber == null)
                 {
-                    _response.StatusCode=HttpStatusCode.NotFound;
+                    _response.StatusCode = HttpStatusCode.NotFound;
+                    _response.IsSuccess = false;
                     return NotFound(_response);
                 }
                 //using mapper here as well
@@ -108,7 +119,7 @@ namespace MagicVilla_VillaAPI.Controllers
                     ModelState.AddModelError("ErrorMessages", "Villa Number already Exists!");
                     return BadRequest(ModelState);
                 }
-                
+
 
                 if (await _dbVilla.GetAsync(u => u.Id == createDTO.VillaID) == null)
                 {
@@ -116,8 +127,8 @@ namespace MagicVilla_VillaAPI.Controllers
                     return BadRequest(ModelState);
                 }
 
-                
-               
+
+
 
                 VillaNumber villaNumber = _mapper.Map<VillaNumber>(createDTO);
 
@@ -126,7 +137,7 @@ namespace MagicVilla_VillaAPI.Controllers
                 _response.Result = _mapper.Map<VillaNumberDTO>(villaNumber);
                 _response.StatusCode = HttpStatusCode.Created;
 
-                return CreatedAtRoute("GetVilla", new { id = villaNumber.VillaNo}, _response);
+                return CreatedAtRoute("GetVilla", new { id = villaNumber.VillaNo }, _response);
             }
             catch (Exception ex)
             {

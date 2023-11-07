@@ -1,9 +1,12 @@
 
 using MagicVilla_VillaAPI;
 using MagicVilla_VillaAPI.Data;
+using MagicVilla_VillaAPI.Models;
 using MagicVilla_VillaAPI.Repository;
 using MagicVilla_VillaAPI.Repository.IRepository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -18,11 +21,24 @@ builder.Services.AddDbContext<ApplicationDbContext>(option => option.UseSqlServe
 //Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.File("log/villaLogs.txt", rollingInterval: RollingInterval.Day).CreateLogger();
 
 //builder.Host.UseSerilog();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddResponseCaching();
 builder.Services.AddScoped<IVillaRepository, VillaRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IVillaNumberRepository, VillaNumberRepository>();
 builder.Services.AddAutoMapper(typeof(MappingConfig));
-
+builder.Services.AddApiVersioning(options =>
+{
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.ReportApiVersions = true;
+});
+builder.Services.AddVersionedApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 var key = builder.Configuration.GetValue<string>("ApiSettings:Secret");
 
 builder.Services.AddAuthentication(x =>
@@ -42,7 +58,13 @@ builder.Services.AddAuthentication(x =>
     };
 });
 
-builder.Services.AddControllers(option=> { 
+builder.Services.AddControllers(option=> {
+    option.CacheProfiles.Add("Default30",
+        new CacheProfile()
+        {
+            Duration = 30,
+        }
+     );
 // option.ReturnHttpNotAcceptable = true;
 }).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -77,6 +99,40 @@ builder.Services.AddSwaggerGen(options =>
             new List<string>()
         }
     });
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1.0",
+        Title = "Magic Villa V1",
+        Description = "API to manage Villa",
+        TermsOfService = new Uri("https://domain.com/terms"),
+        Contact = new OpenApiContact
+        {
+            Name = "Rajkumar Das",
+            Url = new Uri("https://domain.com")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "Example License",
+            Url = new Uri("https://domain.com/license")
+        }
+    });
+    options.SwaggerDoc("v2", new OpenApiInfo
+    {
+        Version = "v2.0",
+        Title = "Magic Villa V2",
+        Description = "API to manage Villa",
+        TermsOfService = new Uri("https://domain.com/terms"),
+        Contact = new OpenApiContact
+        {
+            Name = "Rajkumar Das",
+            Url = new Uri("https://domain.com")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "Example License",
+            Url = new Uri("https://domain.com/license")
+        }
+    });
 });
 
 // to register custom logging interface
@@ -85,11 +141,23 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+//if (app.Environment.IsDevelopment())
+//{
+//    app.UseSwagger();
+//    app.UseSwaggerUI(options =>
+//    {
+//        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Magic_VillaV1");
+//        options.SwaggerEndpoint("/swagger/v2/swagger.json", "Magic_VillaV2");
+//    });
+//}
+
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Magic_VillaV1");
+    options.SwaggerEndpoint("/swagger/v2/swagger.json", "Magic_VillaV2");
+    options.RoutePrefix = string.Empty;
+});
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
