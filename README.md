@@ -1,4 +1,4 @@
-# BookStore - MVC
+# Magic Villa - API
 
 > Magic Villa App helps admin manage Villa with all the CRUD operations.
 
