@@ -12,7 +12,7 @@
 1. dot net identity for authentication and authorization.
 2. Admin users can create, update, delete Villas and associate Villa numbers
 
-### Live Site: [https://firstweb-bookstore.azurewebsites.net/](https://magicvillaweb1.azurewebsites.net/Villa/IndexVilla)
+### Live Site: [https://magicvillaweb1.azurewebsites.net/Villa/IndexVilla](https://magicvillaweb1.azurewebsites.net/Villa/IndexVilla)
 
 ## Quick Start
 
@@ -24,7 +24,7 @@
 
 ### Get a local copy
 
-git clone [https://github.com/rajkumardas2701/DotNetWeb_MVC.git](https://github.com/rajkumardas2701/MagicVilla_API.git)
+git clone [https://github.com/rajkumardas2701/MagicVilla_API.git](https://github.com/rajkumardas2701/MagicVilla_API.git)
 
 ### Installation
 
